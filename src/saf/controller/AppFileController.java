@@ -30,7 +30,7 @@ import static saf.settings.AppStartupConstants.PATH_WORK;
  * that are provided by this framework.
  * 
  * @author Richard McKenna
- * @author ?
+ * @author Zhe Lin
  * @version 1.0
  */
 public class AppFileController {
