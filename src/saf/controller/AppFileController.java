@@ -148,26 +148,35 @@ public class AppFileController {
         } catch (IOException ioe) {
 	    AppMessageDialogSingleton dialog = AppMessageDialogSingleton.getSingleton();
 	    dialog.show(props.getProperty(SAVE_ERROR_TITLE), props.getProperty(SAVE_ERROR_MESSAGE));
+        } catch (IllegalArgumentException ige) {
+	    AppMessageDialogSingleton dialog = AppMessageDialogSingleton.getSingleton();
+	    dialog.show(props.getProperty(SAVE_ERROR_TITLE), props.getProperty(SAVE_ERROR_MESSAGE));
         }
     }
     
     // HELPER METHOD FOR SAVING WORK
     private void saveWork(File selectedFile) throws IOException {
-	// SAVE IT TO A FILE
-	app.getFileComponent().saveData(app.getDataComponent(), selectedFile.getPath());
+	try{
+            // SAVE IT TO A FILE
+            app.getFileComponent().saveData(app.getDataComponent(), selectedFile.getPath());
 	
-	// MARK IT AS SAVED
-	currentWorkFile = selectedFile;
-	saved = true;
+            // MARK IT AS SAVED
+            currentWorkFile = selectedFile;
+            saved = true;
 	
-	// TELL THE USER THE FILE HAS BEEN SAVED
-	AppMessageDialogSingleton dialog = AppMessageDialogSingleton.getSingleton();
-	PropertiesManager props = PropertiesManager.getPropertiesManager();
-        dialog.show(props.getProperty(SAVE_COMPLETED_TITLE),props.getProperty(SAVE_COMPLETED_MESSAGE));
+            // TELL THE USER THE FILE HAS BEEN SAVED
+            AppMessageDialogSingleton dialog = AppMessageDialogSingleton.getSingleton();
+            PropertiesManager props = PropertiesManager.getPropertiesManager();
+            dialog.show(props.getProperty(SAVE_COMPLETED_TITLE),props.getProperty(SAVE_COMPLETED_MESSAGE));
 		    
-	// AND REFRESH THE GUI, WHICH WILL ENABLE AND DISABLE
-	// THE APPROPRIATE CONTROLS
-	app.getGUI().updateToolbarControls(saved);	
+            // AND REFRESH THE GUI, WHICH WILL ENABLE AND DISABLE
+            // THE APPROPRIATE CONTROLS
+            app.getGUI().updateToolbarControls(saved);
+        } catch (IOException ioe) {
+            PropertiesManager props = PropertiesManager.getPropertiesManager();
+	    AppMessageDialogSingleton dialog = AppMessageDialogSingleton.getSingleton();
+	    dialog.show(props.getProperty(SAVE_ERROR_TITLE), props.getProperty(SAVE_ERROR_MESSAGE));
+        }
     }
     
     /**
@@ -213,51 +222,56 @@ public class AppFileController {
      * option to not continue.
      */
     private boolean promptToSave() throws IOException {
-	PropertiesManager props = PropertiesManager.getPropertiesManager();
-	
-	// CHECK TO SEE IF THE CURRENT WORK HAS
-	// BEEN SAVED AT LEAST ONCE
-	
-        // PROMPT THE USER TO SAVE UNSAVED WORK
-	AppYesNoCancelDialogSingleton yesNoDialog = AppYesNoCancelDialogSingleton.getSingleton();
-        yesNoDialog.show(props.getProperty(SAVE_UNSAVED_WORK_TITLE), props.getProperty(SAVE_UNSAVED_WORK_MESSAGE));
+        PropertiesManager props = PropertiesManager.getPropertiesManager();
+
+        try{
+            // PROMPT THE USER TO SAVE UNSAVED WORK
+            AppYesNoCancelDialogSingleton yesNoDialog = AppYesNoCancelDialogSingleton.getSingleton();
+            yesNoDialog.show(props.getProperty(SAVE_UNSAVED_WORK_TITLE), props.getProperty(SAVE_UNSAVED_WORK_MESSAGE));
         
-        // AND NOW GET THE USER'S SELECTION
-        String selection = yesNoDialog.getSelection();
+            // AND NOW GET THE USER'S SELECTION
+            String selection = yesNoDialog.getSelection();
 
-        // IF THE USER SAID YES, THEN SAVE BEFORE MOVING ON
-        if (selection.equals(AppYesNoCancelDialogSingleton.YES)) {
-            // SAVE THE DATA FILE
-            AppDataComponent dataManager = app.getDataComponent();
-	    
-	    if (currentWorkFile == null) {
-		// PROMPT THE USER FOR A FILE NAME
-		FileChooser fc = new FileChooser();
-		fc.setInitialDirectory(new File(PATH_WORK));
-		fc.setTitle(props.getProperty(SAVE_WORK_TITLE));
-		fc.getExtensionFilters().addAll(
-		new ExtensionFilter(props.getProperty(WORK_FILE_EXT_DESC), props.getProperty(WORK_FILE_EXT)));
+            // IF THE USER SAID YES, THEN SAVE BEFORE MOVING ON
+            if (selection.equals(AppYesNoCancelDialogSingleton.YES)) {
+                // SAVE THE DATA FILE
+                AppDataComponent dataManager = app.getDataComponent();
+	            	
+                // CHECK TO SEE IF THE CURRENT WORK HAS
+                // BEEN SAVED AT LEAST ONCE      
+                if (currentWorkFile == null) {
+                    // PROMPT THE USER FOR A FILE NAME
+                    FileChooser fc = new FileChooser();
+                    fc.setInitialDirectory(new File(PATH_WORK));
+                    fc.setTitle(props.getProperty(SAVE_WORK_TITLE));
+                    fc.getExtensionFilters().addAll(
+                    new ExtensionFilter(props.getProperty(WORK_FILE_EXT_DESC), props.getProperty(WORK_FILE_EXT)));
 
-		File selectedFile = fc.showSaveDialog(app.getGUI().getWindow());
-		if (selectedFile != null) {
-		    saveWork(selectedFile);
-		    saved = true;
-		}
-	    }
-	    else {
-		saveWork(currentWorkFile);
-		saved = true;
-	    }
-        } // IF THE USER SAID CANCEL, THEN WE'LL TELL WHOEVER
-        // CALLED THIS THAT THE USER IS NOT INTERESTED ANYMORE
-        else if (selection.equals(AppYesNoCancelDialogSingleton.CANCEL)) {
-            return false;
+                    File selectedFile = fc.showSaveDialog(app.getGUI().getWindow());
+                    if (selectedFile != null) {
+                        saveWork(selectedFile);
+                        saved = true;
+                    }
+                }
+                else {
+                    saveWork(currentWorkFile);
+                    saved = true;
+                }
+            } // IF THE USER SAID CANCEL, THEN WE'LL TELL WHOEVER
+            // CALLED THIS THAT THE USER IS NOT INTERESTED ANYMORE
+            else if (selection.equals(AppYesNoCancelDialogSingleton.CANCEL)) {
+                return false;
+            }
+
+            // IF THE USER SAID NO, WE JUST GO ON WITHOUT SAVING
+            // BUT FOR BOTH YES AND NO WE DO WHATEVER THE USER
+            // HAD IN MIND IN THE FIRST PLACE
+            return true;
+        } catch (IOException ioe) {
+	    AppMessageDialogSingleton dialog = AppMessageDialogSingleton.getSingleton();
+	    dialog.show(props.getProperty(SAVE_ERROR_TITLE), props.getProperty(SAVE_ERROR_MESSAGE));
+            return true;
         }
-
-        // IF THE USER SAID NO, WE JUST GO ON WITHOUT SAVING
-        // BUT FOR BOTH YES AND NO WE DO WHATEVER THE USER
-        // HAD IN MIND IN THE FIRST PLACE
-        return true;
     }
 
     /**
